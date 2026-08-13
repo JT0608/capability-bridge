@@ -962,7 +962,8 @@ _DEFAULT_PROMPTS = {
 
 class OpenAICompatProvider(ModelProvider):
     """Adapter for any OpenAI-compatible /chat/completions vision endpoint
-    (GLM, Qwen, Kimi, MiniMax, OpenRouter, SiliconFlow, self-hosted...)."""
+    (GLM, Qwen, Kimi, OpenRouter, SiliconFlow, self-hosted...). NOTE: MiniMax vision is NOT
+    OpenAI-compatible (own VL protocol) — it needs a dedicated provider type, out of v0.1 scope."""
 
     def __init__(
         self,
@@ -1554,6 +1555,11 @@ routing:
 # Uncomment a second provider, add it to the routing lists below, and fallback kicks in
 # automatically. Each enabled provider needs its own API key env var.
 #
+# NOTE: MiniMax image understanding uses its OWN VL protocol (understand_image / Token Plan),
+# NOT an OpenAI-compatible vision endpoint — it needs a dedicated provider type. Future scope,
+# not part of v0.1. (MiniMax as a TEXT coding model is fine as a main model; its VISION is the
+# part that is out of scope here.)
+#
 # providers:
 #   glm:
 #     type: openai_compatible
@@ -1563,10 +1569,6 @@ routing:
 #     type: openai_compatible
 #     base_url: https://api.moonshot.cn/v1
 #     api_key_env: KIMI_API_KEY
-#   minimax:
-#     type: openai_compatible
-#     base_url: https://api.minimax.io/v1     # CN 平台用 https://api.minimaxi.com/v1
-#     api_key_env: MINIMAX_API_KEY
 #   gemini:
 #     type: gemini
 #     api_key_env: GEMINI_API_KEY
@@ -1580,18 +1582,14 @@ routing:
 #     provider: kimi
 #     model: kimi-k2.6
 #     capabilities: [vision, ocr]
-#   minimax-vl:
-#     provider: minimax
-#     model: MiniMax-M3                 # 原生支持图片输入的 M3 系模型
-#     capabilities: [vision, ocr]
 #   gemini-flash:
 #     provider: gemini
 #     model: gemini-2.5-flash
 #     capabilities: [vision, ocr]
 #
 # routing:
-#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, minimax-vl, gemini-flash]
-#   ocr: [qwen-vl-flash, glm-vl-flash, minimax-vl]
+#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, gemini-flash]
+#   ocr: [qwen-vl-flash, glm-vl-flash]
 ```
 
 - [ ] **Step 4: Run test to verify it passes**

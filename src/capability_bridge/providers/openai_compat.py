@@ -21,7 +21,8 @@ _DEFAULT_PROMPTS = {
 
 class OpenAICompatProvider(ModelProvider):
     """Adapter for any OpenAI-compatible /chat/completions vision endpoint
-    (GLM, Qwen, Kimi, MiniMax, OpenRouter, SiliconFlow, self-hosted...)."""
+    (GLM, Qwen, Kimi, OpenRouter, SiliconFlow, self-hosted...). NOTE: MiniMax vision is NOT
+    OpenAI-compatible (own VL protocol) — it needs a dedicated provider type, out of v0.1 scope."""
 
     def __init__(
         self,
