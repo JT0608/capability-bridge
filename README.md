@@ -49,6 +49,21 @@ To use a higher-capability model, change the `model:` line of the vision model e
 `config.yaml` (e.g. to `qwen3.7-plus`) — a documented optional profile for users who accept higher
 latency. This does not claim flash is "better vision" in general.
 
+## Tested providers
+
+`OpenAICompatProvider` speaks any endpoint that accepts OpenAI-style multimodal
+`/chat/completions` with `image_url` content parts.
+
+**Live tested (v0.1):** Qwen (DashScope), GLM (Zhipu native, `glm-4.6v-flash`), MiniMax-M3 (hosted
+on DashScope — needs the model activated in the Bailian console).
+
+**Implemented, automated-tested only:** Gemini native (`GeminiProvider`) — its contract is covered
+by tests but it is not in the v0.1 live-provider acceptance matrix.
+
+Compatibility with an OpenAI-compatible endpoint depends on that endpoint actually supporting
+multimodal `image_url` inputs (e.g. MiniMax's own API is OpenAI-compatible for text but not for
+vision).
+
 ## Architecture
 
 ```
