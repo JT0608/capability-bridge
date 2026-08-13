@@ -7,6 +7,22 @@ vision through MCP — without switching your main model.
 
 *A transport-agnostic model capability bridge. MCP is the first transport; Vision is the first capability.*
 
+## Features
+
+- **Give your text-only coding model vision** — `vision_analyze(image, prompt)` and
+  `vision_ocr(image)` hand an image to a vision model and return text to your main model, without
+  switching it.
+- **Pluggable providers** — one `OpenAICompatProvider` speaks any OpenAI-compatible vision endpoint
+  (Qwen, GLM, MiniMax-M3, ...); a native `GeminiProvider` covers Google's protocol. Ordered
+  fallback with retry and timeout.
+- **Intent-driven visual reasoning** — the `prompt` is a task-scoped Visual Brief. UI critique,
+  aesthetic review, error-screenshot reading, and art interpretation are all the same primitive,
+  not just captioning.
+- **One-shot installer** — `capability-bridge setup` merges into `.mcp.json` without clobbering
+  other servers, reports missing API keys by name, and `--test` verifies the first provider live.
+- **Transport-agnostic Core** — stateless, no Context Manager; the host owns context and distills a
+  brief. Architecture red lines are enforced by tests.
+
 ## Quickstart (30 seconds)
 
 ```bash
@@ -22,6 +38,32 @@ Missing API keys are reported by name; `--test` makes one real call to verify th
 
 Running from the source repo during development? Start the server with `uv run capability-bridge`
 instead of the installed CLI.
+
+## Example
+
+`docs/sample/sample.png` (a small generated dashboard):
+
+![sample](docs/sample/sample.png)
+
+From Claude Code / Codex, ask for the image:
+
+```
+image:  docs/sample/sample.png
+prompt: What does this mini dashboard show? Answer in one short sentence.
+```
+
+Real result (`qwen3.6-flash`, returned to your main model as a `VisionResult`):
+
+```json
+{
+  "content": "This mini dashboard presents a sales overview comparing performance across January, February, and March with a grand total of 3,200.",
+  "structured_data": null,
+  "provider": "qwen",
+  "model": "qwen3.6-flash",
+  "latency_ms": 3845,
+  "warnings": []
+}
+```
 
 ## How it works
 
@@ -39,15 +81,17 @@ missing key) fails fast at startup with the exact field named.
 
 ## Default model
 
-The shipped config defaults to `qwen3-vl-flash`. In the tested coding-oriented visual workloads
-(simple reading, complex UI review, art analysis, and varying context density) it delivers the
-best latency/quality trade-off: comparable practical output quality to the higher-capability model
-when given the same task-scoped Visual Brief, at substantially lower latency. Benchmark details in
-`docs/benchmarks/2026-08-13-qwen-vision-ab.md`.
+The shipped config defaults to **`qwen3.6-flash`** (DashScope). `qwen3-vl-flash` is retired by
+DashScope on **2026-10-10**; `qwen3.6-flash` is its official unified text+vision successor (same
+OpenAI-compatible interface, just change the model id). The default timeout is 120s because
+`qwen3.6-flash` is a reasoning model (complex UI runs take ~40s).
 
-To use a higher-capability model, change the `model:` line of the vision model entry in
-`config.yaml` (e.g. to `qwen3.7-plus`) — a documented optional profile for users who accept higher
-latency. This does not claim flash is "better vision" in general.
+To use a different model, change the `model:` line of the vision model entry in `config.yaml`
+(e.g. `qwen3.7-plus`, `MiniMax/MiniMax-M3`, `glm-4.6v-flash`) — a documented optional profile.
+
+> Note: the F1–F4 benchmark (`docs/benchmarks/2026-08-13-qwen-vision-ab.md`) was run on the retired
+> `qwen3-vl-flash`. `qwen3.6-flash` is its official successor and should be re-validated for the
+> same workloads (its complex-UI output was spot-checked on 2026-08-14 and is on par).
 
 ## Tested providers
 

@@ -22,10 +22,10 @@ Vision is the first capability. License: Apache-2.0.
 
 ### Defaults / decisions
 
-- Default vision model `qwen3-vl-flash` with a 60s timeout, chosen from the F1–F4 benchmark
-  (`docs/benchmarks/2026-08-13-qwen-vision-ab.md`): with a task-scoped Visual Brief, flash delivers
-  comparable practical quality to the higher-capability model at substantially lower latency.
-  `qwen3.7-plus` is a documented optional profile.
+- Default vision model `qwen3.6-flash` with a 120s timeout. `qwen3-vl-flash` (the F1–F4 benchmark
+  subject) is retired by DashScope on 2026-10-10; `qwen3.6-flash` is its official unified
+  text+vision successor (same OpenAI-compatible interface). `qwen3.7-plus` is a documented optional
+  profile. Benchmark: `docs/benchmarks/2026-08-13-qwen-vision-ab.md`.
 - **Live-tested providers**: Qwen (DashScope), GLM (Zhipu, `glm-4.6v-flash`), MiniMax-M3
   (DashScope-hosted; requires activation in the Bailian console). **Implemented + contract-tested**
   only: Gemini native. See README "Tested providers".

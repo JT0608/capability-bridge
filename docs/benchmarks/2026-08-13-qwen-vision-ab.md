@@ -49,11 +49,13 @@
 ## v0.1 决策
 
 ```text
-default vision model  = qwen3-vl-flash
-default timeout       = 60s
+default vision model  = qwen3.6-flash   (2026-08-14 修正:qwen3-vl-flash 于 2026-10-10 停服,官方替代)
+default timeout       = 120s
 qwen3.7-plus          = 可选高能力档(接受更高延迟),不自动路由
-decision basis        = F1-F4 benchmark 见上
+decision basis        = F1-F4 benchmark 见上(基于停服的前代 qwen3-vl-flash)
 ```
+
+> 2026-08-14 修正:阿里云公告确认 `qwen3-vl-flash` 于 2026-10-10 停服,官方替代为统一文本+视觉的 `qwen3.6-flash`(接口不变,只改 model ID)。qwen3.6-flash 复杂 UI 已抽查(41.8s,质量与前代相当);完整 F1-F4 应在 qwen3.6-flash 上重跑后再固化为长期默认。
 
 - README 表述:默认 Flash 的原因是目前 coding-oriented benchmarks 下 latency/quality trade-off 最好;Plus 为可选更高能力模型,接受更高延迟。不宣称 Flash"视觉能力更强"。
 - v0.2 的 `fast/deep` 自动路由需要更多数据再决定,不由本 benchmark 提前定死。

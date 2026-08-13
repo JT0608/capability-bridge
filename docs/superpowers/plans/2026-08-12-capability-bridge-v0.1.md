@@ -191,7 +191,7 @@ def test_core_and_providers_directories_exist() -> None:
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd d:/BTD/deepseek-vision && uv run pytest tests/test_architecture.py -v`
+Run: `cd <repo-root> && uv run pytest tests/test_architecture.py -v`
 Expected: FAIL — `core` and `providers` directories don't exist yet (`FileNotFoundError` from `rglob`).
 
 - [ ] **Step 3: Create the scaffold**
@@ -1532,7 +1532,7 @@ Create `config.example.yaml` (project root):
 # at the bottom to enable automatic failover.
 
 policy:
-  timeout_seconds: 60   # Level 1 (live E2E 2026-08-13): 真实 UI 截图 + 设计评审约需 25s,15s 默认太短
+  timeout_seconds: 120   # qwen3.6-flash 是推理模型,复杂 UI ~42s;qwen3-vl-flash 2026-10-10 停服(2026-08-14 换默认)
   max_retries: 1
 
 providers:
@@ -1542,14 +1542,14 @@ providers:
     api_key_env: QWEN_API_KEY
 
 models:
-  qwen-vl-flash:
+  qwen36-flash:
     provider: qwen
-    model: qwen3-vl-flash
+    model: qwen3.6-flash
     capabilities: [vision, ocr]
 
 routing:
-  vision: [qwen-vl-flash]
-  ocr: [qwen-vl-flash]
+  vision: [qwen36-flash]
+  ocr: [qwen36-flash]
 
 # ---- Optional fallbacks (advanced) -----------------------------------------
 # Uncomment a second provider, add it to the routing lists below, and fallback kicks in
@@ -1598,8 +1598,8 @@ routing:
 #     capabilities: [vision, ocr]
 #
 # routing:
-#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, minimax-m3, gemini-flash]
-#   ocr: [qwen-vl-flash, glm-vl-flash]
+#   vision: [qwen36-flash, glm-vl-flash, kimi-vl, minimax-m3, gemini-flash]
+#   ocr: [qwen36-flash, glm-vl-flash]
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
