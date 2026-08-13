@@ -37,6 +37,18 @@ next one is tried automatically.
 Only objective facts live here — no subjective model scoring. A broken config (unknown model,
 missing key) fails fast at startup with the exact field named.
 
+## Default model
+
+The shipped config defaults to `qwen3-vl-flash`. In the tested coding-oriented visual workloads
+(simple reading, complex UI review, art analysis, and varying context density) it delivers the
+best latency/quality trade-off: comparable practical output quality to the higher-capability model
+when given the same task-scoped Visual Brief, at substantially lower latency. Benchmark details in
+`docs/benchmarks/2026-08-13-qwen-vision-ab.md`.
+
+To use a higher-capability model, change the `model:` line of the vision model entry in
+`config.yaml` (e.g. to `qwen3.7-plus`) — a documented optional profile for users who accept higher
+latency. This does not claim flash is "better vision" in general.
+
 ## Architecture
 
 ```

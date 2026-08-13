@@ -33,6 +33,19 @@
 - **v0.1 承诺**:通用原语可用("传对 prompt + 选对模型,就能做审美/UI/艺术分析");不做专业 task profile。
 - **质量边界**:审美上限在视觉模型与提问质量,不在桥。桥决定"用户意图是否完整地交给一个有审美能力的模型"。
 
+## 实测升级(2026-08-13,benchmark F1-F4)
+
+> 原先是理论,现在有真实数据:
+
+> **Visual Brief quality is a first-order capability factor.**
+>
+> In our tests, moving from a generic prompt to a task-scoped brief changed both Flash and Plus
+> from descriptive image narration into actionable visual critique; adding substantially more
+> unrelated context provided little additional benefit.
+
+- 数据见 `docs/benchmarks/2026-08-13-qwen-vision-ab.md`:A(裸)→B(brief)两个模型几乎翻倍(Flash 42→86 / Plus 46→87),B→C(富上下文)基本持平。
+- 含义:Host 提炼 task-scoped context 比让视觉模型自己扛大上下文更重要;capability-bridge 的职责是**把 brief 原样送到视觉模型**(已由 prompt 保真测试锁定),而不是替 Host 维护上下文。
+
 ## 落地位置(对应计划修订)
 
 - `prompts/vision-trigger.md`(Task 14):触发规则落实"意图驱动"措辞,禁止裸描述兜底。

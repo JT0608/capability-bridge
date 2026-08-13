@@ -1,0 +1,6 @@
+LABEL: SIMPLE-PLUS | MODEL: qwen3.7-plus | LATENCY: 4893ms
+
+这张图里包含以下内容：
+
+1.  左侧有一个**红色的长方形**，其下方写着文字“**Hello 123**”。
+2.  右侧有一个**蓝色的圆形**。
