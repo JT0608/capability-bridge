@@ -62,5 +62,5 @@ routing:
 #     capabilities: [vision, ocr]
 #
 # routing:
-#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, minimax-vl, gemini-flash]
-#   ocr: [qwen-vl-flash, glm-vl-flash, minimax-vl]
+#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, gemini-flash]
+#   ocr: [qwen-vl-flash, glm-vl-flash]
