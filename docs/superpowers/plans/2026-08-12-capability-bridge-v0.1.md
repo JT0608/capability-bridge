@@ -1532,7 +1532,7 @@ Create `config.example.yaml` (project root):
 # at the bottom to enable automatic failover.
 
 policy:
-  timeout_seconds: 15
+  timeout_seconds: 60   # Level 1 (live E2E 2026-08-13): 真实 UI 截图 + 设计评审约需 25s,15s 默认太短
   max_retries: 1
 
 providers:

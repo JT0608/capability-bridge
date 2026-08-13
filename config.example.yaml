@@ -6,7 +6,7 @@
 # at the bottom to enable automatic failover.
 
 policy:
-  timeout_seconds: 15
+  timeout_seconds: 60   # real-vision requests ~25s, 15s default too short
   max_retries: 1
 
 providers:
