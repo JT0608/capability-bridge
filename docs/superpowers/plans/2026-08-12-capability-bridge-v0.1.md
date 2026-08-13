@@ -1580,9 +1580,9 @@ routing:
 #     api_key_env: GEMINI_API_KEY
 #
 # models:
-#   glm-vl-flash:
+#   glm-v:
 #     provider: glm
-#     model: glm-4.6v-flash
+#     model: glm-4.6v            # 非 flash 档:免费 flash 版响应慢且限流(429),用 4.6v
 #     capabilities: [vision, ocr]
 #   kimi-vl:
 #     provider: kimi
@@ -1598,8 +1598,8 @@ routing:
 #     capabilities: [vision, ocr]
 #
 # routing:
-#   vision: [qwen36-flash, glm-vl-flash, kimi-vl, minimax-m3, gemini-flash]
-#   ocr: [qwen36-flash, glm-vl-flash]
+#   vision: [qwen36-flash, glm-v, kimi-vl, minimax-m3, gemini-flash]
+#   ocr: [qwen36-flash, glm-v]
 ```
 
 - [ ] **Step 4: Run test to verify it passes**

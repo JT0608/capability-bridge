@@ -87,7 +87,7 @@ OpenAI-compatible interface, just change the model id). The default timeout is 1
 `qwen3.6-flash` is a reasoning model (complex UI runs take ~40s).
 
 To use a different model, change the `model:` line of the vision model entry in `config.yaml`
-(e.g. `qwen3.7-plus`, `MiniMax/MiniMax-M3`, `glm-4.6v-flash`) — a documented optional profile.
+(e.g. `qwen3.7-plus`, `MiniMax/MiniMax-M3`, `glm-4.6v`) — a documented optional profile.
 
 > Note: the F1–F4 benchmark (`docs/benchmarks/2026-08-13-qwen-vision-ab.md`) was run on the retired
 > `qwen3-vl-flash`. `qwen3.6-flash` is its official successor and should be re-validated for the
@@ -98,7 +98,7 @@ To use a different model, change the `model:` line of the vision model entry in 
 `OpenAICompatProvider` speaks any endpoint that accepts OpenAI-style multimodal
 `/chat/completions` with `image_url` content parts.
 
-**Live tested (v0.1):** Qwen (DashScope), GLM (Zhipu native, `glm-4.6v-flash`), MiniMax-M3 (hosted
+**Live tested (v0.1):** Qwen (DashScope), GLM (Zhipu native, `glm-4.6v`), MiniMax-M3 (hosted
 on DashScope — needs the model activated in the Bailian console).
 
 **Implemented, automated-tested only:** Gemini native (`GeminiProvider`) — its contract is covered
