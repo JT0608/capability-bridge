@@ -909,10 +909,12 @@ async def test_malformed_response_maps_to_invalid(image) -> None:
 
 
 async def test_aclose_closes_own_client() -> None:
-    async def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"choices": [{"message": {"content": "x"}}]})
-
-    provider = _provider(handler)
+    # NOTE: construct WITHOUT an injected client so the provider OWNS it and aclose() must close it.
+    # (Reusing _provider(handler) here would inject a client -> _owns_client=False -> the impl
+    # intentionally does NOT close it; that case is covered by the next test.)
+    provider = OpenAICompatProvider(
+        base_url="https://example.com/v1", api_key="test-key", model="qwen3-vl-flash", name="qwen"
+    )
     assert not provider._client.is_closed
     await provider.aclose()
     assert provider._client.is_closed
@@ -1136,10 +1138,8 @@ async def test_malformed_response_maps_to_invalid(image) -> None:
 
 
 async def test_aclose_closes_own_client() -> None:
-    async def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "x"}]}}]})
-
-    provider = _provider(handler)
+    # NOTE: construct WITHOUT an injected client so the provider OWNS it and aclose() must close it.
+    provider = GeminiProvider(api_key="test-key", model="gemini-2.5-flash", name="gemini")
     assert not provider._client.is_closed
     await provider.aclose()
     assert provider._client.is_closed
