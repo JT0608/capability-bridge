@@ -9,3 +9,6 @@ build/
 # Test
 .pytest_cache/
 .coverage
+
+# Local runtime config (repo root only — created by `capability-bridge setup`; holds env-var refs)
+/config.yaml
