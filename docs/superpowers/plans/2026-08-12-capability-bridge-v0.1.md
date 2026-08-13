@@ -1679,13 +1679,14 @@ git commit -m "feat(core): structured logging with privacy whitelist"
 
 **Interfaces:**
 - Consumes: `ModelProvider`, `ModelRequest`, `CapabilityResult`, error classes + `is_fallback_error`, `log_call`.
-- Produces: `RoutingPolicy(providers: list[ModelProvider], timeout_seconds: float = 15.0, max_retries: int = 1, request_id: str = "-")` with `async execute(request: ModelRequest, *, request_id: str | None = None) -> CapabilityResult`. Retries each provider up to `1 + max_retries` times on fallback-able errors; on Authentication/UnsupportedInput raises immediately; falls to the next provider otherwise; raises the last error when exhausted.
+- Produces: `RoutingPolicy(providers: list[ModelProvider], timeout_seconds: float = 15.0, max_retries: int = 1, request_id: str = "-")` with `async execute(request: ModelRequest, *, request_id: str | None = None) -> RoutedResponse`. Retries each provider up to `1 + max_retries` times on fallback-able errors; on Authentication/UnsupportedInput raises immediately; falls to the next provider otherwise; raises the last error when exhausted. **Latency semantics (locked at Checkpoint 1):** every attempt log line carries that attempt's OWN latency (measured per attempt, so the routing log stays per-provider data for the future dynamic router); `RoutedResponse.latency_ms` is the END-TO-END total (from `execute()` start to the successful return) — that is what the user perceives and what `VisionResult.latency_ms` reports.
 
 - [ ] **Step 1: Write the failing test**
 
 Create `tests/test_routing.py`:
 
 ```python
+import asyncio
 import json
 import logging
 
@@ -1752,6 +1753,31 @@ async def test_every_attempt_is_logged(caplog, tmp_path) -> None:
     assert all(line["provider"] == "a" for line in failures)
     assert failures[0]["fallback_count"] == 0
     assert successes[0]["fallback_count"] == 1
+
+
+async def test_attempt_log_latency_is_per_attempt_not_cumulative(caplog, tmp_path) -> None:
+    """Attempt logs carry each provider's OWN latency; the result carries the end-to-end total."""
+
+    class SlowProvider(FakeProvider):
+        def __init__(self, name: str, behavior: str = "ok", delay: float = 0.05) -> None:
+            super().__init__(name, behavior=behavior)
+            self.delay = delay
+
+        async def invoke(self, request):
+            await asyncio.sleep(self.delay)
+            return await super().invoke(request)
+
+    p1, p2 = SlowProvider("a", behavior="timeout"), SlowProvider("b")
+    policy = RoutingPolicy([p1, p2], max_retries=1)
+    with caplog.at_level(logging.INFO, logger="capability_bridge"):
+        result = await policy.execute(_req(tmp_path))
+    lines = [json.loads(r.getMessage()) for r in caplog.records]
+    success = next(line for line in lines if line["success"])
+    assert success["provider"] == "b"
+    # b ran only its own ~50ms; its log line must NOT include provider a's timeout time.
+    assert success["latency_ms"] < 100, "fallback provider's log leaked cumulative latency"
+    # end-to-end total accumulates a(50ms) + retry(50ms) + b(50ms) >> b's own attempt.
+    assert result.latency_ms > success["latency_ms"]
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1816,15 +1842,15 @@ class RoutingPolicy:
 
         for index, provider in enumerate(self.providers):
             for _ in range(1 + self.max_retries):
+                attempt_started = time.monotonic()  # per-attempt latency (feeds the routing log)
                 try:
                     response = await asyncio.wait_for(provider.invoke(request), timeout=self.timeout_seconds)
-                    latency_ms = int((time.monotonic() - started) * 1000)
                     log_call(
                         request_id=request_id,
                         capability=request.capability,
                         provider=provider.name,
                         model=provider.model,
-                        latency_ms=latency_ms,
+                        latency_ms=int((time.monotonic() - attempt_started) * 1000),
                         success=True,
                         fallback_count=fallback_count,
                     )
@@ -1832,7 +1858,7 @@ class RoutingPolicy:
                         response=response,
                         provider=provider.name,
                         model=provider.model,
-                        latency_ms=latency_ms,
+                        latency_ms=int((time.monotonic() - started) * 1000),  # end-to-end total
                         warnings=warnings,
                     )
                 except asyncio.TimeoutError as exc:
@@ -1841,13 +1867,12 @@ class RoutingPolicy:
                     last_error = exc
                 except Exception as exc:  # pragma: no cover - defensive
                     last_error = exc
-                latency_ms = int((time.monotonic() - started) * 1000)
                 log_call(
                     request_id=request_id,
                     capability=request.capability,
                     provider=provider.name,
                     model=provider.model,
-                    latency_ms=latency_ms,
+                    latency_ms=int((time.monotonic() - attempt_started) * 1000),
                     success=False,
                     error_type=type(last_error).__name__,
                     fallback_count=fallback_count,
@@ -1982,7 +2007,7 @@ class VisionCapability:
             structured_data=routed.response.structured_data,
             provider=routed.provider,
             model=routed.model,
-            latency_ms=routed.latency_ms,
+            latency_ms=routed.latency_ms,  # end-to-end total (per-attempt latencies live in the routing log)
             warnings=routed.warnings,
         )
 
@@ -1995,7 +2020,7 @@ class VisionCapability:
             structured_data=routed.response.structured_data,
             provider=routed.provider,
             model=routed.model,
-            latency_ms=routed.latency_ms,
+            latency_ms=routed.latency_ms,  # end-to-end total (per-attempt latencies live in the routing log)
             warnings=routed.warnings,
         )
 
