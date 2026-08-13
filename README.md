@@ -12,9 +12,9 @@ vision through MCP — without switching your main model.
 - **Give your text-only coding model vision** — `vision_analyze(image, prompt)` and
   `vision_ocr(image)` hand an image to a vision model and return text to your main model, without
   switching it.
-- **Pluggable providers** — one `OpenAICompatProvider` speaks any OpenAI-compatible vision endpoint
-  (Qwen, GLM, MiniMax-M3, ...); a native `GeminiProvider` covers Google's protocol. Ordered
-  fallback with retry and timeout.
+- **Pluggable providers** — one `OpenAICompatProvider` speaks OpenAI-compatible multimodal
+  endpoints that accept `image_url` content parts (Qwen, GLM, MiniMax-M3, ...); a native
+  `GeminiProvider` covers Google's protocol. Ordered fallback with retry and timeout.
 - **Intent-driven visual reasoning** — the `prompt` is a task-scoped Visual Brief. UI critique,
   aesthetic review, error-screenshot reading, and art interpretation are all the same primitive,
   not just captioning.
@@ -25,12 +25,16 @@ vision through MCP — without switching your main model.
 
 ## Quickstart (30 seconds)
 
+> From a cloned repository. (Once published to PyPI, this becomes `uv tool install capability-bridge`.)
+
 ```bash
 # 1. install the CLI once
 uv tool install .
-# 2. one-shot setup: config + key check + MCP wiring + trigger, optionally a live provider test
+# 2a. Claude Code: one-shot setup (config + key check + MCP wiring + trigger) + live self-test
 capability-bridge setup --target claude-code --test
-# 3. in Claude Code / Codex: send a screenshot and ask "what's wrong here?"
+# 2b. Codex: prints the ~/.codex/config.toml snippet and the `codex mcp add` alternative
+capability-bridge setup --target codex --test
+# 3. send a screenshot and ask "what's wrong here?"
 ```
 
 `setup` never overwrites an existing `.mcp.json` — it merges only the `capability-bridge` entry.
@@ -68,7 +72,7 @@ Real result (`qwen3.6-flash`, returned to your main model as a `VisionResult`):
 ## How it works
 
 `vision_analyze(image, prompt?)` and `vision_ocr(image)` hand your image to a vision model
-(Qwen-VL, GLM-4.6V, Kimi, Gemini, ...) and return the text to your main model. Providers are
+(Qwen, GLM, MiniMax-M3, Gemini, ...) and return the text to your main model. Providers are
 tried in the order in `config.yaml`; if one times out, is rate-limited, or is unavailable, the
 next one is tried automatically.
 
@@ -81,17 +85,19 @@ missing key) fails fast at startup with the exact field named.
 
 ## Default model
 
-The shipped config defaults to **`qwen3.6-flash`** (DashScope). `qwen3-vl-flash` is retired by
-DashScope on **2026-10-10**; `qwen3.6-flash` is its official unified text+vision successor (same
-OpenAI-compatible interface, just change the model id). The default timeout is 120s because
-`qwen3.6-flash` is a reasoning model (complex UI runs take ~40s).
+The shipped config defaults to **`qwen3.6-flash`** (DashScope). `qwen3-vl-flash` is now a legacy
+model family — its legacy snapshots are scheduled for deprecation, and Alibaba recommends
+`qwen3.6-flash` as the official recommended replacement for the relevant Qwen3-VL Flash models
+(same OpenAI-compatible interface, just change the model id). `qwen3.6-flash` is a hybrid-thinking
+model with thinking enabled by default, which adds latency — the default timeout is 120s (complex
+UI runs take ~40s).
 
 To use a different model, change the `model:` line of the vision model entry in `config.yaml`
 (e.g. `qwen3.7-plus`, `MiniMax/MiniMax-M3`, `glm-4.6v`) — a documented optional profile.
 
-> Note: the F1–F4 benchmark (`docs/benchmarks/2026-08-13-qwen-vision-ab.md`) was run on the retired
-> `qwen3-vl-flash`. `qwen3.6-flash` is its official successor and should be re-validated for the
-> same workloads (its complex-UI output was spot-checked on 2026-08-14 and is on par).
+> Note: the F1–F4 benchmark (`docs/benchmarks/2026-08-13-qwen-vision-ab.md`) was run on the now-legacy
+> `qwen3-vl-flash`. `qwen3.6-flash` is the official recommended replacement and should be re-validated
+> for the same workloads (its complex-UI output was spot-checked on 2026-08-14 and is on par).
 
 ## Tested providers
 

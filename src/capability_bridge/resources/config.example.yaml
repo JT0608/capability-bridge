@@ -5,8 +5,9 @@
 # result immediately (Product DoD: "one key -> first success"). Uncomment the fallback examples
 # at the bottom to enable automatic failover.
 #
-# NOTE (2026-08-14): qwen3-vl-flash is RETIRED by DashScope on 2026-10-10. The default is
-# qwen3.6-flash — its official unified text+vision successor (same OpenAI-compatible interface).
+# NOTE (2026-08-14): qwen3-vl-flash is now a legacy model family (legacy snapshots scheduled for
+# deprecation); Alibaba recommends qwen3.6-flash as the official recommended replacement. Same
+# OpenAI-compatible interface — just change the model id.
 
 policy:
   timeout_seconds: 120   # qwen3.6-flash is a reasoning model; complex UI ~42s
