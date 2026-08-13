@@ -21,9 +21,11 @@ class FakeProvider(ModelProvider):
         self.calls = 0
         self.closed = False
         self.aclose_calls = 0
+        self.last_request: ModelRequest | None = None
 
     async def invoke(self, request: ModelRequest) -> ModelResponse:
         self.calls += 1
+        self.last_request = request  # lets tests assert prompt/capability reached the provider verbatim
         if self.behavior == "timeout":
             raise TimeoutError("provider timed out")
         if self.behavior == "auth":

@@ -673,9 +673,11 @@ class FakeProvider(ModelProvider):
         self.calls = 0
         self.closed = False
         self.aclose_calls = 0
+        self.last_request: ModelRequest | None = None
 
     async def invoke(self, request: ModelRequest) -> ModelResponse:
         self.calls += 1
+        self.last_request = request  # lets tests assert prompt/capability reached the provider verbatim
         if self.behavior == "timeout":
             raise TimeoutError("provider timed out")
         if self.behavior == "auth":
@@ -851,6 +853,19 @@ async def test_success_payload_and_content(image) -> None:
 
     response = await _provider(handler).invoke(ModelRequest(capability="vision", image=image))
     assert response.content == "a cat"
+
+
+async def test_explicit_prompt_is_forwarded_unchanged(image) -> None:
+    sent = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        sent["prompt"] = body["messages"][0]["content"][0]["text"]
+        return httpx.Response(200, json={"choices": [{"message": {"content": "x"}}]})
+
+    prompt = "Analyze hierarchy, spacing, typography, and color as a senior product designer."
+    await _provider(handler).invoke(ModelRequest(capability="vision", image=image, prompt=prompt))
+    assert sent["prompt"] == prompt  # explicit prompt wins over _DEFAULT_PROMPTS, verbatim
 
 
 async def test_401_maps_to_authentication(image) -> None:
@@ -1078,6 +1093,22 @@ async def test_success_payload_and_content(image) -> None:
 
     response = await _provider(handler).invoke(ModelRequest(capability="vision", image=image))
     assert response.content == "a dog"
+
+
+async def test_explicit_prompt_is_forwarded_unchanged(image) -> None:
+    sent = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        sent["prompt"] = body["contents"][0]["parts"][0]["text"]
+        return httpx.Response(
+            200,
+            json={"candidates": [{"content": {"parts": [{"text": "x"}]}}]},
+        )
+
+    prompt = "Analyze composition, light, color, and mood as an art critic."
+    await _provider(handler).invoke(ModelRequest(capability="vision", image=image, prompt=prompt))
+    assert sent["prompt"] == prompt  # explicit prompt wins over _DEFAULT_PROMPTS, verbatim
 
 
 async def test_401_maps_to_authentication(image) -> None:
@@ -1532,6 +1563,10 @@ routing:
 #     type: openai_compatible
 #     base_url: https://api.moonshot.cn/v1
 #     api_key_env: KIMI_API_KEY
+#   minimax:
+#     type: openai_compatible
+#     base_url: https://api.minimax.io/v1     # CN 平台用 https://api.minimaxi.com/v1
+#     api_key_env: MINIMAX_API_KEY
 #   gemini:
 #     type: gemini
 #     api_key_env: GEMINI_API_KEY
@@ -1545,14 +1580,18 @@ routing:
 #     provider: kimi
 #     model: kimi-k2.6
 #     capabilities: [vision, ocr]
+#   minimax-vl:
+#     provider: minimax
+#     model: MiniMax-M3                 # 原生支持图片输入的 M3 系模型
+#     capabilities: [vision, ocr]
 #   gemini-flash:
 #     provider: gemini
 #     model: gemini-2.5-flash
 #     capabilities: [vision, ocr]
 #
 # routing:
-#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, gemini-flash]
-#   ocr: [qwen-vl-flash, glm-vl-flash]
+#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, minimax-vl, gemini-flash]
+#   ocr: [qwen-vl-flash, glm-vl-flash, minimax-vl]
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1969,6 +2008,22 @@ async def test_aclose_closes_shared_provider_once() -> None:
     capability = VisionCapability(ImagePreprocessor(), {"vision": vision_policy, "ocr": ocr_policy})
     await capability.aclose()
     assert shared.aclose_calls == 1
+
+
+async def test_unsupported_task_rejected(tmp_path) -> None:
+    with pytest.raises(UnsupportedInputError, match="unsupported vision task"):
+        await _capability().analyze(make_image(tmp_path), task="ui_review")
+
+
+async def test_prompt_reaches_provider_unchanged(tmp_path) -> None:
+    """End-to-end fidelity: the prompt the main model builds is exactly what the provider receives."""
+    provider = FakeProvider("qwen")
+    policy = RoutingPolicy([provider], timeout_seconds=5)
+    capability = VisionCapability(ImagePreprocessor(), {"vision": policy, "ocr": policy})
+    prompt = "Analyze hierarchy, spacing, typography, and color as a senior product designer."
+    await capability.analyze(make_image(tmp_path), prompt=prompt)
+    assert provider.last_request is not None
+    assert provider.last_request.prompt == prompt
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1985,6 +2040,7 @@ from __future__ import annotations
 
 import uuid
 
+from capability_bridge.core.errors import UnsupportedInputError
 from capability_bridge.core.preprocessing.image import ImagePreprocessor
 from capability_bridge.core.providers.base import ModelRequest
 from capability_bridge.core.routing.policy import RoutingPolicy
@@ -1999,6 +2055,10 @@ class VisionCapability:
         self._policies = policies
 
     async def analyze(self, image_input: str, prompt: str | None = None, task: str = "general") -> VisionResult:
+        # v0.1 ships one task profile; reject unknown values loudly instead of silently ignoring
+        # them (otherwise task="ui_review" would "look like it works" until its real semantics arrive).
+        if task != "general":
+            raise UnsupportedInputError(f"unsupported vision task: {task}; v0.1 supports only 'general'")
         normalized = self._preprocessor.normalize(image_input)
         request = ModelRequest(capability="vision", image=normalized, prompt=prompt)
         routed = await self._policies["vision"].execute(request, request_id=str(uuid.uuid4()))
@@ -2466,10 +2526,19 @@ Create `prompts/vision-trigger.md`:
 
 When the user provides an image — a screenshot, terminal error, UI mockup, document scan,
 diagram, or any picture — or when an image cannot be read directly, call the `vision_analyze`
-MCP tool with the image's local path and, if known, a short `prompt` describing what to look for.
+MCP tool with the image's local path and a `prompt` derived from the user's intent.
+
+Vision is visual reasoning, not image captioning. Build the `prompt` from what the user actually
+wants to know:
+- If the intent is inferable from context, turn it into a targeted analysis prompt. Example:
+  "make this page look more polished" → review the UI as a designer (hierarchy, spacing,
+  typography, color, consistency, and the changes that would most improve it); "analyze this
+  painting" → composition, light, color, style, mood.
+- If the intent is unclear, pass a neutral general visual-analysis prompt. Do NOT invent
+  aesthetic, debugging, or design goals the user did not ask for.
 
 When the user needs text extracted from an image, call the `vision_ocr` MCP tool with the
-image's local path.
+image's local path instead.
 
 Treat the tool result as the agent's visual observation of the image. Use it for subsequent
 reasoning, but preserve uncertainty when the result is ambiguous or incomplete.
@@ -2804,3 +2873,5 @@ git commit -m "feat: capability-bridge setup CLI + merge-safe install + product 
 - **Single-provider default:** `config.example.yaml` enables only qwen by default; GLM/Kimi/Gemini are commented-out fallback examples. Strict `validate_config` stays correct because routing only references enabled providers, and Product DoD's "one key → first success" holds.
 - **`aclose()` lifecycle:** `ModelProvider.aclose()` (default no-op) closes only self-created httpx clients (`_owns_client`); `VisionCapability.aclose()` closes each provider exactly once (deduped by identity — a single vision+ocr instance is shared across policies); composition root `bootstrap.py` is package-level and `--test` runs provider + aclose in a single `asyncio.run`.
 - **Execution mode:** Subagent-Driven (one fresh subagent per task, parent reviews each diff with import check + pytest + architecture test, no subagent may change architecture). Execution Protocol section defines checkpoints, the 3-level deviation rule, and "plan is a blueprint, not law". git identity must be set by the user locally (repo-local) — not invented by the executor; the spec commit lands first (Task 1).
+- **Vision semantics (Product Note):** `vision_analyze` is intent-driven visual reasoning, not captioning. Task 6/7 forward explicit `prompt` verbatim (default only when `None`); Task 11 rejects `task != "general"` (no silent ignore) and tests prompt end-to-end fidelity (`FakeProvider.last_request.prompt`); Task 14 trigger rule instructs the agent to derive intent-driven prompts without inventing user goals. See `docs/superpowers/product/2026-08-13-vision-product-note.md`.
+- **Tech debt (recorded, not fixed):** `_DEFAULT_PROMPTS` is duplicated in both Task 6 and Task 7 adapters. When the Capability layer takes on task profiles (`ui_review`, `art_analysis`, ...), consolidate default prompts there. Do NOT do this DRY refactor now.
