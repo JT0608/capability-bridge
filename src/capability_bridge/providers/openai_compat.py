@@ -40,7 +40,7 @@ class OpenAICompatProvider(ModelProvider):
         self.name = name
         self.capabilities = capabilities if capabilities is not None else {"vision": True, "ocr": True}
         self._owns_client = client is None
-        self._client = client or httpx.AsyncClient(timeout=30.0)
+        self._client = client or httpx.AsyncClient(timeout=120.0)
 
     async def aclose(self) -> None:
         if self._owns_client:
