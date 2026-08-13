@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-capability-bridge = "capability_bridge.transports.mcp.server:main"
+capability-bridge = "capability_bridge.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,0 +1,66 @@
+# Copy to config.yaml, set your API keys as env vars, then:
+#   capability-bridge            (installed CLI; from source during dev: uv run capability-bridge)
+#
+# The default is intentionally ONE provider, so a new user sets a single key and gets a first
+# result immediately (Product DoD: "one key -> first success"). Uncomment the fallback examples
+# at the bottom to enable automatic failover.
+
+policy:
+  timeout_seconds: 15
+  max_retries: 1
+
+providers:
+  qwen:
+    type: openai_compatible
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api_key_env: QWEN_API_KEY
+
+models:
+  qwen-vl-flash:
+    provider: qwen
+    model: qwen3-vl-flash
+    capabilities: [vision, ocr]
+
+routing:
+  vision: [qwen-vl-flash]
+  ocr: [qwen-vl-flash]
+
+# ---- Optional fallbacks (advanced) -----------------------------------------
+# Uncomment a second provider, add it to the routing lists below, and fallback kicks in
+# automatically. Each enabled provider needs its own API key env var.
+#
+# NOTE: MiniMax image understanding uses its OWN VL protocol (understand_image / Token Plan),
+# NOT an OpenAI-compatible vision endpoint — it needs a dedicated provider type. Future scope,
+# not part of v0.1. (MiniMax as a TEXT coding model is fine as a main model; its VISION is the
+# part that is out of scope here.)
+#
+# providers:
+#   glm:
+#     type: openai_compatible
+#     base_url: https://open.bigmodel.cn/api/paas/v4
+#     api_key_env: GLM_API_KEY
+#   kimi:
+#     type: openai_compatible
+#     base_url: https://api.moonshot.cn/v1
+#     api_key_env: KIMI_API_KEY
+#   gemini:
+#     type: gemini
+#     api_key_env: GEMINI_API_KEY
+#
+# models:
+#   glm-vl-flash:
+#     provider: glm
+#     model: glm-4.6v-flash
+#     capabilities: [vision, ocr]
+#   kimi-vl:
+#     provider: kimi
+#     model: kimi-k2.6
+#     capabilities: [vision, ocr]
+#   gemini-flash:
+#     provider: gemini
+#     model: gemini-2.5-flash
+#     capabilities: [vision, ocr]
+#
+# routing:
+#   vision: [qwen-vl-flash, glm-vl-flash, kimi-vl, minimax-vl, gemini-flash]
+#   ocr: [qwen-vl-flash, glm-vl-flash, minimax-vl]

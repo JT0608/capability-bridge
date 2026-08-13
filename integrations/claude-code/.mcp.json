@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "capability-bridge": {
+      "command": "capability-bridge"
+    }
+  }
+}
