@@ -43,20 +43,19 @@ Missing API keys are reported by name; `--test` makes one real call to verify th
 Running from the source repo during development? Start the server with `uv run capability-bridge`
 instead of the installed CLI.
 
-## Example
+## Examples
 
-`docs/sample/sample.png` (a small generated dashboard):
+`vision_analyze` is visual reasoning, not just image description — the `prompt` is a task-scoped
+Visual Brief. One primitive, three levels of use. All results below are real `qwen3.6-flash` output.
 
-![sample](docs/sample/sample.png)
+### 1. Basic — image understanding
 
-From Claude Code / Codex, ask for the image:
+![basic](docs/sample/sample.png)
 
 ```
 image:  docs/sample/sample.png
 prompt: What does this mini dashboard show? Answer in one short sentence.
 ```
-
-Real result (`qwen3.6-flash`, returned to your main model as a `VisionResult`):
 
 ```json
 {
@@ -68,6 +67,57 @@ Real result (`qwen3.6-flash`, returned to your main model as a `VisionResult`):
   "warnings": []
 }
 ```
+
+### 2. Visual reasoning — UI design critique
+
+Give it a design brief and it becomes a design specialist, not a camera:
+
+![ui](docs/sample/sample-ui.png)
+
+```
+image:  docs/sample/sample-ui.png
+prompt: Analyze this dashboard UI as a senior product designer. This SaaS admin is being visually
+        redesigned to look modern, restrained, and professional, reducing the cheap template feel.
+        Another coding agent will implement your recommendations. Evaluate: information hierarchy,
+        density, whitespace/rhythm, color system, typography, card design, radius/shadows,
+        navigation-vs-content, what makes it look templated, and which changes give the most visual
+        improvement for the least effort. Do not just describe. Do not write code.
+        Output: 1) overall judgment 2) the 5 most important problems 3) a concrete improvement
+        direction per problem 4) implementation priority.
+```
+
+Real result (abridged):
+
+> The dashboard is currently **shouting**; a premium dashboard should **whisper**. It relies on
+> color-based contrast (bright blocks) instead of structural contrast (space, size, weight).
+>
+> Problems: aggressive rainbow KPI cards (the "chart library" trap) · insufficient whitespace &
+> rhythm · visual noise in the charts · weak table hierarchy (2005-Excel borders) · inconsistent
+> card styling + a jarring promo banner in the nav.
+>
+> Priorities: strip the KPI card backgrounds → remove the sidebar promo banner → turn status pills
+> into dot+text → open up spacing.
+
+### 3. Aesthetic analysis — artwork interpretation
+
+![art](docs/sample/sample-art.png)
+
+```
+image:  docs/sample/sample-art.png
+prompt: Appreciate this artwork as a senior art critic and curator. Analyze: composition and visual
+        focus, light and shadow, color relationships and palette, brushwork/texture/material, space
+        and depth, style and genre, emotion and atmosphere, aesthetic character and artistic value.
+        Be specific and insightful.
+```
+
+Real result (abridged):
+
+> A self-referential tableau of digital whimsy and narrative recursion. Strict central composition;
+> the open book — not the creature's face — is the true focal point. Warm golden-hour light, no harsh
+> chiaroscuro. Monochromatic buttery-yellow harmony, broken only by the lime-green eyes. Shallow
+> depth of field isolates a private moment of study. Pop Surrealism × digital character art; the book
+> title "How many tears must a calm dragon shed?" turns the image into a dialogue about identity and
+> emotion.
 
 ## How it works
 
