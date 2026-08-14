@@ -2,8 +2,8 @@
 
 > **Love your coding model, but it can't see? Give it eyes.**
 
-Keep DeepSeek, MiniMax, or any coding model — even a text-only one — as your coding brain.
-capability-bridge adds vision through MCP, without switching your main model.
+Keep DeepSeek — or any coding model — as your coding brain. capability-bridge adds vision
+through MCP, without switching your main model.
 
 *A transport-agnostic model capability bridge. MCP is the first transport; Vision is the first capability.*
 
