@@ -9,7 +9,7 @@ capability-bridge adds vision through MCP, without switching your main model.
 
 ## Features
 
-- **Give your text-only coding model vision** — `vision_analyze(image, prompt)` and
+- **Give a text-only coding model vision** — `vision_analyze(image, prompt)` and
   `vision_ocr(image)` hand an image to a vision model and return text to your main model, without
   switching it.
 - **Pluggable providers** — one `OpenAICompatProvider` speaks OpenAI-compatible multimodal
@@ -37,8 +37,9 @@ capability-bridge setup --target codex --test
 # 3. send a screenshot and ask "what's wrong here?"
 ```
 
-`setup` never overwrites an existing `.mcp.json` — it merges only the `capability-bridge` entry.
-Missing API keys are reported by name; `--test` makes one real call to verify the first provider.
+`setup` merges only the `capability-bridge` entry into `.mcp.json` — it never overwrites other
+servers (Claude Code target; the Codex target prints a `config.toml` snippet instead). Missing API
+keys are reported by name; `--test` makes one real call to verify the first provider.
 
 Running from the source repo during development? Start the server with `uv run capability-bridge`
 instead of the installed CLI.
